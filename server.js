@@ -1,10 +1,26 @@
-import { app, PROVIDER_TIMEOUT_MS } from "./app.js";
+const express = require("express");
 
-const PORT = process.env.PORT || 3000;
+const app = express();
+app.use(express.json());
 
-const server = app.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+app.get("/", (req, res) => {
+  res.status(200).json({
+    ok: true,
+    service: "orbit-ai-backend",
+    route: "/"
+  });
 });
 
-server.requestTimeout = Math.max(PROVIDER_TIMEOUT_MS + 5_000, 30_000);
-server.headersTimeout = Math.max(PROVIDER_TIMEOUT_MS + 10_000, 35_000);
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    ok: true,
+    service: "orbit-ai-backend",
+    route: "/health"
+  });
+});
+
+const PORT = process.env.PORT || 10000;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Orbit backend listening on 0.0.0.0:${PORT}`);
+});
