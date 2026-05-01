@@ -49,42 +49,43 @@ const PROGRESS_INSTRUCTION = [
   "Keep the summary to 3 or 4 short sentences."
 ].join("\n");
 
-const genAI = providerStatus.gemini ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+let genAI = null;
+const modelCache = new Map();
 
-function createModel(systemInstruction, generationConfig) {
-  if (!genAI) return null;
-  return genAI.getGenerativeModel({
+function getGeminiClient() {
+  if (!providerStatus.gemini) return null;
+  if (!genAI) {
+    genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+  }
+  return genAI;
+}
+
+function createModel(cacheKey, systemInstruction, generationConfig) {
+  const client = getGeminiClient();
+  if (!client) return null;
+  if (modelCache.has(cacheKey)) {
+    return modelCache.get(cacheKey);
+  }
+  const model = client.getGenerativeModel({
     model: MODEL_NAME,
     systemInstruction,
     generationConfig
   });
+  modelCache.set(cacheKey, model);
+  return model;
 }
-
-const chatModel = createModel(SYSTEM_INSTRUCTION, {
-  temperature: 0.7,
-  topK: 32,
-  topP: 0.9,
-  maxOutputTokens: 480
-});
-
-const taskGenModel = createModel(TASK_GEN_INSTRUCTION, {
-  temperature: 0.4,
-  topK: 32,
-  topP: 0.9,
-  maxOutputTokens: 720,
-  responseMimeType: "application/json"
-});
-
-const progressModel = createModel(PROGRESS_INSTRUCTION, {
-  temperature: 0.6,
-  topK: 32,
-  topP: 0.9,
-  maxOutputTokens: 320
-});
 
 const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
+
+app.get("/", (_req, res) => {
+  res.status(200).json({ ok: true, service: "orbit-ai-backend" });
+});
+
+app.get("/health", (_req, res) => {
+  res.status(200).json({ ok: true, service: "orbit-ai-backend" });
+});
 
 const allowedOrigins = ALLOWED_ORIGINS
   ? ALLOWED_ORIGINS.split(",").map((value) => value.trim()).filter(Boolean)
@@ -221,9 +222,29 @@ function withProviderTimeout(promise) {
 }
 
 function modelForPurpose(purpose) {
-  if (purpose === "tasks") return taskGenModel;
-  if (purpose === "progress") return progressModel;
-  return chatModel;
+  if (purpose === "tasks") {
+    return createModel("tasks", TASK_GEN_INSTRUCTION, {
+      temperature: 0.4,
+      topK: 32,
+      topP: 0.9,
+      maxOutputTokens: 720,
+      responseMimeType: "application/json"
+    });
+  }
+  if (purpose === "progress") {
+    return createModel("progress", PROGRESS_INSTRUCTION, {
+      temperature: 0.6,
+      topK: 32,
+      topP: 0.9,
+      maxOutputTokens: 320
+    });
+  }
+  return createModel("chat", SYSTEM_INSTRUCTION, {
+    temperature: 0.7,
+    topK: 32,
+    topP: 0.9,
+    maxOutputTokens: 480
+  });
 }
 
 function systemInstructionForPurpose(purpose) {
@@ -443,12 +464,6 @@ app.use((req, res, next) => {
     console.log(`[orbit-ai] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${Date.now() - startedAt}ms)`);
   });
   next();
-});
-
-app.get("/health", (_req, res) => {
-  res.json({
-    ok: true
-  });
 });
 
 app.post("/ai/chat", aiLimiter, async (req, res) => {
