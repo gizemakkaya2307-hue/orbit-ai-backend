@@ -4,7 +4,7 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const PORT = Number(process.env.PORT ?? 3000);
+const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = (process.env.GEMINI_API_KEY ?? "").trim();
 const GROQ_API_KEY = (process.env.GROQ_API_KEY ?? "").trim();
 const OPENROUTER_API_KEY = (process.env.OPENROUTER_API_KEY ?? "").trim();
@@ -448,12 +448,7 @@ app.use((req, res, next) => {
 
 app.get("/health", (_req, res) => {
   res.json({
-    ok: true,
-    service: "orbit-ai-backend",
-    providerConfigured,
-    model: MODEL_NAME,
-    providerOrder: AI_PROVIDER_ORDER,
-    providers: providerStatus
+    ok: true
   });
 });
 
@@ -641,9 +636,7 @@ app.use((error, _req, res, _next) => {
 });
 
 const server = app.listen(PORT, "0.0.0.0", () => {
-  console.log(
-    `[orbit-ai] listening on http://0.0.0.0:${PORT} (model=${MODEL_NAME}, providerConfigured=${providerConfigured})`
-  );
+  console.log(`Server running on ${PORT}`);
 });
 
 server.requestTimeout = Math.max(PROVIDER_TIMEOUT_MS + 5_000, 30_000);
