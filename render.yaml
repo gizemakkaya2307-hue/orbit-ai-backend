@@ -1,0 +1,43 @@
+# Render.com one-click deploy spec for the Orbit AI backend.
+#
+# How to use:
+#   1. Push this repo to GitHub.
+#   2. Go to https://dashboard.render.com → New → Blueprint → connect this repo.
+#   3. Render reads this file and creates the production Web Service.
+#   4. In the dashboard, set secret env vars: GEMINI_API_KEY, GROQ_API_KEY, OPENROUTER_API_KEY
+#   5. Render gives you an HTTPS URL like https://orbit-ai-backend.onrender.com
+#   6. Paste that URL into local.properties:
+#        ORBIT_API_BASE_URL_RELEASE=https://orbit-ai-backend.onrender.com/
+#   7. Build the release AAB.
+#
+# Notes:
+# - Play Store icin Starter plani secili tutulur; servis uyumaz ve ilk istek gecikmesi yasamaz.
+# - Render TLS'yi kendisi sonlandirir; Node uygulamasi iceride HTTP calismaya devam eder.
+
+services:
+  - type: web
+    name: orbit-ai-backend
+    runtime: node
+    plan: starter
+    region: frankfurt          # change to oregon / singapore if your users are elsewhere
+    rootDir: orbit-ai-backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: AI_PROVIDER_ORDER
+        value: gemini,openrouter,groq,local
+      - key: GEMINI_API_KEY
+        sync: false             # set this manually in Render dashboard, never in this file
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      # Restrict CORS to nothing — only the Android app calls us, no browser.
+      - key: ALLOWED_ORIGINS
+        value: ""
+    healthCheckPath: /health
+    autoDeploy: true

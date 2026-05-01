@@ -1,20 +1,22 @@
 {
   "name": "orbit-ai-backend",
   "version": "1.0.0",
+  "description": "Backend proxy for Orbit Focus AI. Holds AI provider keys server-side so the Android app never ships them.",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": ">=20"
-  },
+  "main": "server.js",
   "scripts": {
-    "dev": "node --watch server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "express": "^4.21.2",
-    "express-rate-limit": "^7.4.1",
-    "helmet": "^8.0.0",
-    "zod": "^3.23.8"
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.0"
   }
 }
